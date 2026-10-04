@@ -1,0 +1,8 @@
+{
+  "name": "cubejs",
+  "version": "1.3.2",
+  "description": "Unmodified cubejs 1.3.2 solver runtime, without upstream's unused npm tooling dependency",
+  "main": "index.js",
+  "license": "MIT",
+  "repository": "https://github.com/ldez/cubejs"
+}
