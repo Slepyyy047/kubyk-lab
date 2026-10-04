@@ -49,7 +49,18 @@ export function stickerPose(size: PuzzleSize, index: number): { position: Vec3; 
   }
 }
 
-function poseKey(position: readonly number.normal), index);
+function poseKey(position: readonly number[], normal: readonly number[]): string {
+  return `${position.join(',')}|${normal.join(',')}`;
+}
+
+export function getStickerIndexAtPose(size: PuzzleSize, position: Vec3, normal: Vec3): number | undefined {
+  validateSize(size);
+  let poseIndexes = poseIndexesBySize.get(size);
+  if (!poseIndexes) {
+    poseIndexes = new Map<string, number>();
+    for (let index = 0; index < size * size * 6; index += 1) {
+      const pose = stickerPose(size, index);
+      poseIndexes.set(poseKey(pose.position, pose.normal), index);
     }
     poseIndexesBySize.set(size, poseIndexes);
   }
@@ -74,16 +85,41 @@ function rotateQuarter(vector: Vec3, axis: 0 | 1 | 2, quarterTurns: 1 | -1): Vec
   return quarterTurns === 1 ? [-y, x, z] : [y, -x, z];
 }
 
-functiosize);
+function rotate(vector: Vec3, axis: 0 | 1 | 2, quarterTurns: number): Vec3 {
+  let result = vector;
+  const normalized = ((quarterTurns % 4) + 4) % 4;
+  for (let i = 0; i < normalized; i += 1) result = rotateQuarter(result, axis, 1);
+  return result;
+}
+
+function validateMove(size: PuzzleSize, move: PuzzleMove): void {
+  if (!faces.includes(move.face)) throw new RangeError('Невідома грань кубика.');
+  if (!Number.isInteger(move.depth) || move.depth < 0 || move.depth >= size) throw new RangeError('Шар руху поза межами кубика.');
+  if (move.turns !== 1 && move.turns !== -1 && move.turns !== 2) throw new RangeError('Невідомий напрямок повороту.');
+}
+
+export function applyPuzzleMove(state: PuzzleState, move: PuzzleMove): PuzzleState {
+  validateSize(state.size);
   const total = state.size * state.size * 6;
   if (state.stickers.length !== total || state.stickers.some((color) => !colorValues.includes(color))) {
     throw new RangeError('Стан кубика має містити правильну кількість кольорових наліпок.');
-  t stickers = Array<Color>(total);
+  }
+  validateMove(state.size, move);
+  const axis = faceAxis[move.face];
+  const normal = faceNormal(move.face);
+  const layerCoordinate = (state.size - 1) - 2 * move.depth;
+  const direction = move.turns === 2 ? 2 : -move.turns * normal[axis];
+  const stickers = Array<Color>(total);
   for (let index = 0; index < total; index += 1) {
     const pose = stickerPose(state.size, index);
     if (pose.position[axis] !== layerCoordinate * normal[axis]) {
       stickers[index] = state.stickers[index];
-     throw new Error('Не вдалося знайти клітинку після повороту.');
+      continue;
+    }
+    const position = rotate(pose.position, axis, direction);
+    const rotatedNormal = rotate(pose.normal, axis, direction);
+    const target = getStickerIndexAtPose(state.size, position, rotatedNormal);
+    if (target === undefined) throw new Error('Не вдалося знайти клітинку після повороту.');
     stickers[target] = state.stickers[index];
   }
   return { size: state.size, stickers };

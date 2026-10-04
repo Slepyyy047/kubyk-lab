@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { faces } from './cube';
-import { applystory:[],moves:0,shuffled:false};
+import { applyPuzzleMove, solvedPuzzle, scrambleMoves, type PuzzleMove, type PuzzleSize } from './puzzle';
+
+interface GameRecord { history:PuzzleMove[]; moves:number; shuffled:boolean }
+function restore(size:PuzzleSize,persist:boolean):GameRecord {
+  const empty={history:[],moves:0,shuffled:false};
   if(!persist)return empty;
   try {
     const raw=localStorage.getItem(`kubyk:play:v1:${size}`);
@@ -18,7 +22,13 @@ export default function usePuzzle(size:PuzzleSize,persist=true) {
   const [puzzle,setPuzzle]=useState(()=>initial.history.reduce(applyPuzzleMove,solvedPuzzle(size)));
   const [record,setRecord]=useState(initial);
   const [turn,setTurn]=useState<{id:number;move:PuzzleMove}|null>(null);
-  const [shuffling,setef(false);
+  const [shuffling,setShuffling]=useState(false);
+  const [saveFailed,setSaveFailed]=useState(false);
+  const queue=useRef<PuzzleMove[]>([]);
+  const sequence=useRef(0);
+  const lock=useRef(false);
+  const turnRef=useRef(turn);turnRef.current=turn;
+  const shuffleRef=useRef(false);
   useEffect(()=>{
     if(!persist)return;
     try{localStorage.setItem(`kubyk:play:v1:${size}`,JSON.stringify(record));setSaveFailed(false)}catch{setSaveFailed(true)}
@@ -30,7 +40,10 @@ export default function usePuzzle(size:PuzzleSize,persist=true) {
   const complete=useCallback(()=>{
     const current=turnRef.current;if(!current)return;
     turnRef.current=null;
-    setPuzquence.current,move:next});return;}
+    setPuzzle(previous=>applyPuzzleMove(previous,current.move));
+    setRecord(previous=>({...previous,history:[...previous.history,current.move],moves:previous.moves+(shuffleRef.current?0:1)}));
+    const next=queue.current.shift();
+    if(next){setTurn({id:++sequence.current,move:next});return;}
     setTurn(null);lock.current=false;
     if(shuffleRef.current){shuffleRef.current=false;setShuffling(false);setRecord(previous=>({...previous,moves:0,shuffled:true}));}
   },[]);

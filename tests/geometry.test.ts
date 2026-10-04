@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitesface poses', () => {
+import { describe, expect, it } from 'vitest';
+import { applyMoves, solvedColors, faces } from '../src/cube';
+import { faceletGeometry, permuteFacelets, turnFaceletPermutation } from '../src/cubeGeometry';
+
+describe('URFDLB 3D facelet geometry', () => {
+  it('maps all 54 stickers to unique surface poses', () => {
     const poses = Array.from({ length: 54 }, (_, i) => {
       const { position, normal } = faceletGeometry(i);
       return `${position.join(',')}|${normal.join(',')}`;
